@@ -1,0 +1,96 @@
+
+services:
+  remediation-worker:
+    image: python:3.12-slim
+    container_name: cloudpilot-remediation-worker
+    working_dir: /app
+    command: python -u worker.py
+    volumes:
+      - ./remediation:/app:ro
+    ports:
+      - "5001:5001"
+    networks:
+      - cloudpilot
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: cloudpilot-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - node-exporter-1
+      - node-exporter-2
+      - alertmanager
+    networks:
+      - cloudpilot
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: cloudpilot-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: cloudpilot-local-2026
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - cloudpilot
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: cloudpilot-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - cloudpilot
+
+  node-exporter-1:
+    image: prom/node-exporter:v1.9.1
+    container_name: cloudpilot-server-1
+    restart: unless-stopped
+    command:
+      - "--web.listen-address=:9100"
+    ports:
+      - "9101:9100"
+    networks:
+      - cloudpilot
+
+  node-exporter-2:
+    image: prom/node-exporter:v1.9.1
+    container_name: cloudpilot-server-2
+    restart: unless-stopped
+    command:
+      - "--web.listen-address=:9100"
+    ports:
+      - "9102:9100"
+    networks:
+      - cloudpilot
+
+networks:
+  cloudpilot:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

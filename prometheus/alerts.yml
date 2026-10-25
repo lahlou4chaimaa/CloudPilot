@@ -1,0 +1,38 @@
+
+# groups:
+#   - name: cloudpilot-availability
+#     rules:
+#       - alert: ServerExporterDown
+#         expr: up{job="cloudpilot-servers"} == 0
+#         for: 30s
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "Serveur {{ $labels.server }} indisponible"
+#           description: "Prometheus ne reçoit plus les métriques de {{ $labels.server }}."
+
+#   - name: cloudpilot-resources
+#     rules:
+#       - alert: HighCPUUsage
+#         expr: |
+#           100 * (1 - avg by (server) (
+#             rate(node_cpu_seconds_total{
+#               job="cloudpilot-servers",
+#               mode="idle"
+#             }[5m])
+#           )) > 85
+#         for: 2m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "CPU élevé sur {{ $labels.server }}"
+#           description: "L'utilisation CPU dépasse 85 % depuis 2 minutes."
+
+- alert: ServerExporterDown
+  expr: up{job="cloudpilot-servers"} == 0
+  for: 30s
+  labels:
+    severity: critical
+  annotations:
+    summary: "Serveur {{ $labels.server }} indisponible"
+    description: "Prometheus ne reçoit plus les métriques de {{ $labels.server }}."

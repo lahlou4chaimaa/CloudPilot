@@ -1,0 +1,33 @@
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: cloudpilot-servers
+    static_configs:
+      - targets:
+          - node-exporter-1:9100
+        labels:
+          server: server-1
+          environment: development
+
+      - targets:
+          - node-exporter-2:9100
+        labels:
+          server: server-2
+          environment: development
